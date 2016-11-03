@@ -95,19 +95,19 @@ function authValidate() {
 }
 
 function authLogOut() {
-  document.getElementById('auth-log-out').innerHTML += "testing... ";
+  document.getElementById('auth-log-out-status').innerHTML += "testing... ";
   return new Promise(function(resolve, reject) {
     $fh.auth.clearSession(function(err){
       $fh.auth.hasSession(function(err, exist){
         if (err) {
-          document.getElementById('auth-log-out').innerHTML += "failed to check session ERROR";
+          document.getElementById('auth-log-out-status').innerHTML += "failed to check session ERROR";
           return resolve();
         }
         if (exist) {
-          document.getElementById('auth-log-out').innerHTML += "session still valid ERROR";
+          document.getElementById('auth-log-out-status').innerHTML += "session still valid ERROR";
           return resolve();
         }
-        document.getElementById('auth-log-out').innerHTML += "OK";
+        document.getElementById('auth-log-out-status').innerHTML += "OK";
         resolve();
       });
     });

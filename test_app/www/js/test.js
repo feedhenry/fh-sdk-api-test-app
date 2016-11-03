@@ -1,8 +1,10 @@
 const auth = require('./auth');
 const cloud = require('./cloud');
+const getCloudUrl = require('./get-cloud-url');
 
 auth.test()
   .then(cloud.test)
+  .then(getCloudUrl.test)
   .then(finished)
   .catch(onError);
 

@@ -51,7 +51,9 @@ prepareEnvironment()
       console.log('TEST SUCCESS');
     } else {
       console.log('TEST FAILURE');
-      process.exit(1);
+      if (program['exit-fail']) {
+        process.exit(1);
+      }
     }
   })
   .catch((err) => {
