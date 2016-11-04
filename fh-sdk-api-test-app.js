@@ -14,6 +14,7 @@ const fhcDeleteProject = require('./lib/fhc-delete-project');
 const fhcCreatePolicy = require('./lib/fhc-create-policy');
 const fhcDeletePolicy = require('./lib/fhc-delete-policy');
 const fhcAppDeploy = require('./lib/fhc-app-deploy');
+const fhcSecureEndpoints = require('./lib/fhc-secure-endpoints');
 
 const testAppFolder = __dirname + '/test_app/';
 const cordovaUrl = 'http://localhost:8000/browser/www/index.html';
@@ -64,15 +65,30 @@ function prepareEnvironment() {
   return fhcInit(program)
     .then(prepareProject)
     .then(deployCloudApp)
+    .then(secureEndpoints)
     .then(preparePolicy)
     .then(setFhconfig)
     .then(setTestConfig);
 }
 
-function deployCloudApp() {
-  var app = _.find(project.apps, (app) => {
+function secureEndpoints() {
+  var app = getCloudApp();
+
+  return fhcSecureEndpoints({
+    appGuid: app.guid,
+    security: 'appapikey',
+    env: program.environment
+  });
+}
+
+function getCloudApp() {
+  return _.find(project.apps, (app) => {
     return app.type === 'cloud_nodejs';
   });
+}
+
+function deployCloudApp() {
+  var app = getCloudApp();
 
   return fhcAppDeploy({
     appGuid: app.guid,

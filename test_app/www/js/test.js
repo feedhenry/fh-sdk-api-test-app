@@ -1,10 +1,12 @@
 const auth = require('./auth');
 const cloud = require('./cloud');
 const getCloudUrl = require('./get-cloud-url');
+const getFHParams = require('./get-fh-params');
 
 auth.test()
   .then(cloud.test)
   .then(getCloudUrl.test)
+  .then(getFHParams.test)
   .then(finished)
   .catch(onError);
 
