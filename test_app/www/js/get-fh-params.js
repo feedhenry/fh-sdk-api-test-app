@@ -28,6 +28,7 @@ function getFHParams() {
   });
 }
 
+// NOTE: this test fails because of https://issues.jboss.org/browse/RHMAP-11212
 function getFHParamsFail() {
   return new Promise(function(resolve, reject) {
     document.getElementById('get-fh-params-fail-status').innerHTML += 'testing... ';
