@@ -15,14 +15,20 @@ const fhcCreatePolicy = require('./lib/fhc-create-policy');
 const fhcDeletePolicy = require('./lib/fhc-delete-policy');
 const fhcAppDeploy = require('./lib/fhc-app-deploy');
 const fhcSecureEndpoints = require('./lib/fhc-secure-endpoints');
+const fhcAppImport = require('./lib/fhc-app-import');
+const fhcConnectionUpdate = require('./lib/fhc-connection-update');
+const fhcListConnections = require('./lib/fhc-connections-list');
 
 const testAppFolder = __dirname + '/test_app/';
 const cordovaUrl = 'http://localhost:8000/browser/www/index.html';
 
 const projectName = 'api-test-project';
 const policyName = 'api-test-policy';
+const cloudAppName = 'api-test-cloud-app';
 
 var project;
+var cloudApp;
+var connection;
 var policy;
 var cordova;
 var success;
@@ -45,6 +51,9 @@ if (!program.host || !program.username || !program.password || !program.environm
 prepareEnvironment()
   .then(runCordova)
   .then(checkResults)
+  .catch((err) => {
+    console.error(err);
+  })
   .then(stopCordova)
   .then(cleanEnvironment)
   .then(() => {
@@ -64,36 +73,52 @@ prepareEnvironment()
 function prepareEnvironment() {
   return fhcInit(program)
     .then(prepareProject)
-    .then(deployCloudApp)
+    .then(importTestCloudApp)
+    .then(prepareConnection)
     .then(secureEndpoints)
     .then(preparePolicy)
     .then(setFhconfig)
     .then(setTestConfig);
 }
 
-function secureEndpoints() {
-  var app = getCloudApp();
+function prepareConnection() {
+  return fhcListConnections({ projectId: project.guid })
+    .then(connections => { console.log(JSON.stringify(connections, null, 2)); return connections[0]; })
+    .then(updateConnection)
+    .then(saveConnection);
+}
 
+function saveConnection(conn) {
+  console.log('saving conn');
+  connection = conn;
+}
+
+function updateConnection(conn) {
+  console.log('updating connection');
+  return fhcConnectionUpdate({
+    projectId: project.guid,
+    connectionId: conn.guid,
+    cloudAppId: cloudApp.guid,
+    env: program.environment
+  });
+}
+
+function secureEndpoints() {
   return fhcSecureEndpoints({
-    appGuid: app.guid,
+    appGuid: cloudApp.guid,
     security: 'appapikey',
     env: program.environment
   });
 }
 
-function getCloudApp() {
-  return _.find(project.apps, (app) => {
-    return app.type === 'cloud_nodejs';
-  });
-}
-
-function deployCloudApp() {
-  var app = getCloudApp();
-
-  return fhcAppDeploy({
-    appGuid: app.guid,
+function importTestCloudApp() {
+  return fhcAppImport({
+    projectId: project.guid,
+    title: cloudAppName,
+    type: 'cloud_nodejs',
+    source: './fixtures/cloud-app.zip',
     env: program.environment
-  });
+  }).then(saveCloudApp);
 }
 
 function prepareProject() {
@@ -129,7 +154,9 @@ function runCordova() {
 }
 
 function stopCordova() {
-  cordova.kill('SIGINT');
+  if (cordova) {
+    cordova.kill('SIGINT');
+  }
 }
 
 function checkResults() {
@@ -193,14 +220,11 @@ function setFhconfig() {
 }
 
 function setTestConfig() {
-  var app = _.find(project.apps, (app) => {
-    return app.type === 'client_advanced_hybrid';
-  });
   var testConf = {
     username: program.username,
     password: program.password,
     policyId: policyName,
-    clientToken: app.guid
+    clientToken: cloudApp.guid
   }
   return new Promise(function(resolve, reject) {
     fs.writeFile(testAppFolder + 'www/testconfig.json', JSON.stringify(testConf, null, 2), (err) => {
@@ -219,6 +243,11 @@ function forwardPolicyGuid() {
 
 function saveProject(projectDetails) {
   project = projectDetails;
+}
+
+function saveCloudApp(appDetails) {
+  console.log(JSON.stringify(appDetails, null, 2));
+  cloudApp = appDetails;
 }
 
 function savePolicy(policyDetails) {

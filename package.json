@@ -23,7 +23,7 @@
     "browserify": "^13.1.1",
     "chromedriver": "^2.25.1",
     "commander": "^2.9.0",
-    "fh-fhc": "^2.1.0",
+    "fh-fhc": "git@github.com:feedhenry/fh-fhc.git#033b6f290ad66ef2e48385d277a0df6a1ac651ad",
     "request": "^2.75.0",
     "selenium-server": "^3.0.1",
     "underscore": "^1.8.3",

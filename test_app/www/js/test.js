@@ -4,6 +4,7 @@ const getCloudUrl = require('./get-cloud-url');
 const getFHParams = require('./get-fh-params');
 const hash = require('./hash');
 const sec = require('./sec');
+const sync = require('./sync');
 
 auth.test()
   .then(cloud.test)
@@ -11,6 +12,7 @@ auth.test()
   .then(getFHParams.test)
   .then(hash.test)
   .then(sec.test)
+  .then(sync.test)
   .then(finished)
   .catch(onError);
 
