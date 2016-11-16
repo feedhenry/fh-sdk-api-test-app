@@ -13,7 +13,6 @@ const fhcCreateProject = require('./lib/fhc-create-project');
 const fhcDeleteProject = require('./lib/fhc-delete-project');
 const fhcCreatePolicy = require('./lib/fhc-create-policy');
 const fhcDeletePolicy = require('./lib/fhc-delete-policy');
-const fhcAppDeploy = require('./lib/fhc-app-deploy');
 const fhcSecureEndpoints = require('./lib/fhc-secure-endpoints');
 const fhcAppImport = require('./lib/fhc-app-import');
 const fhcConnectionUpdate = require('./lib/fhc-connection-update');
@@ -28,7 +27,6 @@ const cloudAppName = 'api-test-cloud-app';
 
 var project;
 var cloudApp;
-var connection;
 var policy;
 var cordova;
 var success;
@@ -83,18 +81,13 @@ function prepareEnvironment() {
 
 function prepareConnection() {
   return fhcListConnections({ projectId: project.guid })
-    .then(connections => { console.log(JSON.stringify(connections, null, 2)); return connections[0]; })
-    .then(updateConnection)
-    .then(saveConnection);
-}
-
-function saveConnection(conn) {
-  console.log('saving conn');
-  connection = conn;
+    .then(connections => {
+      return connections[0];
+    })
+    .then(updateConnection);
 }
 
 function updateConnection(conn) {
-  console.log('updating connection');
   return fhcConnectionUpdate({
     projectId: project.guid,
     connectionId: conn.guid,
@@ -147,7 +140,7 @@ function cleanEnvironment() {
 }
 
 function runCordova() {
-  return new Promise(function(resolve, reject) {
+  return new Promise(function(resolve) {
     cordova = execFile('cordova', ['serve'], { cwd: testAppFolder });
     resolve();
   });
@@ -162,7 +155,9 @@ function stopCordova() {
 function checkResults() {
   return httpRequest(cordovaUrl)
     .then(getResults)
-    .catch((error) => { return checkResults(); });
+    .catch(() => {
+      return checkResults();
+    });
 
   function getResults() {
     var options = {
@@ -170,7 +165,7 @@ function checkResults() {
         browserName: 'chrome'
       }
     };
-    return new Promise(function(resolve, reject) {
+    return new Promise(function(resolve) {
       webdriverio
         .remote(options)
         .init()
@@ -207,7 +202,7 @@ function setFhconfig() {
     connectiontag: '0.0.1',
     host: program.host,
     projectid: project.guid,
-  }
+  };
   return new Promise(function(resolve, reject) {
     fs.writeFile(testAppFolder + 'www/fhconfig.json', JSON.stringify(fhConf, null, 2), (err) => {
       if (err) {
@@ -225,7 +220,7 @@ function setTestConfig() {
     password: program.password,
     policyId: policyName,
     clientToken: cloudApp.guid
-  }
+  };
   return new Promise(function(resolve, reject) {
     fs.writeFile(testAppFolder + 'www/testconfig.json', JSON.stringify(testConf, null, 2), (err) => {
       if (err) {
@@ -246,7 +241,6 @@ function saveProject(projectDetails) {
 }
 
 function saveCloudApp(appDetails) {
-  console.log(JSON.stringify(appDetails, null, 2));
   cloudApp = appDetails;
 }
 
@@ -256,7 +250,7 @@ function savePolicy(policyDetails) {
 
 function httpRequest(url) {
   return new Promise(function(resolve, reject) {
-    request(url, function (error, response, body) {
+    request(url, function(error, response, body) {
       if (error) {
         return reject(error);
       }

@@ -46,7 +46,7 @@ function sec() {
         return;
       }
 
-      var options = {
+      options = {
         "act": "encrypt",
         "params": {
           "plaintext": "Need a new page to start on",
@@ -55,9 +55,9 @@ function sec() {
           "iv": iv
         }
       };
-      $fh.sec(options, function (res) {
+      $fh.sec(options, function(res) {
         ciphertext = res.ciphertext;
-      }, function (code) {
+      }, function(code) {
         allOk = false;
         document.getElementById('sec-status').innerHTML += code + '-error ';
       });
@@ -65,7 +65,7 @@ function sec() {
         return;
       }
 
-      var options = {
+      options = {
         "act": "decrypt",
         "params": {
           "ciphertext": ciphertext,
@@ -74,14 +74,14 @@ function sec() {
           "iv": iv
         }
       };
-      $fh.sec(options, function (res) {
+      $fh.sec(options, function(res) {
         if (res.plaintext === 'Need a new page to start on') {
           document.getElementById('sec-status').innerHTML += keySize + '-ok ';
         } else {
           allOk = false;
           document.getElementById('sec-status').innerHTML += keySize + '-error ';
         }
-      }, function (code) {
+      }, function(code) {
         allOk = false;
         document.getElementById('sec-status').innerHTML += code + '-error ';
       });

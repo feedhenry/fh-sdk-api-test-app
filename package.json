@@ -33,5 +33,7 @@
     "type": "git",
     "url": "git+https://github.com/feedhenry/fh-sdk-api-test-app.git"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "eslint": "^3.10.0"
+  }
 }

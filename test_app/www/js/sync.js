@@ -1,50 +1,89 @@
+/*global $fh*/
+
 module.exports = {
   test: test
 };
 
+const datasetId = 'test';
+
 function test() {
   return syncInit()
-    .then(syncNotify)
     .then(syncManage)
-    .then(wait10sec);
+    .then(syncNotify)
+    .then(syncDoList);
 }
 
 function syncInit() {
-  return new Promise(function(resolve, reject) {
+  return new Promise(function(resolve) {
     document.getElementById('sync-init-status').innerHTML += 'testing... ';
-    $fh.sync.init({ sync_frequency: 1 });
+    $fh.sync.init({ sync_frequency: 1, storage_strategy: 'dom' });
     document.getElementById('sync-init-status').innerHTML += 'OK';
     resolve();
   });
 }
 
 function syncNotify() {
-  return new Promise(function(resolve, reject) {
+  var received = {
+    sync_started: false,
+    delta_received: false,
+    sync_complete: false
+  };
+  var receivedNum = 0;
+
+  return new Promise(function(resolve) {
     document.getElementById('sync-notify-status').innerHTML += 'testing... ';
-    $fh.sync.notify(notification);
-    document.getElementById('sync-notify-status').innerHTML += 'OK';
-    resolve();
+    $fh.sync.notify(function(event) {
+      receivedNum += 1;
+
+      received[event.code] = true;
+
+      if (receivedNum <= 3) {
+        document.getElementById('sync-notify-status').innerHTML += event.code + ' ';
+
+        if (receivedNum === 3) {
+          if (received.sync_started && received.delta_received && received.sync_complete) {
+            document.getElementById('sync-notify-status').innerHTML += 'OK';
+          } else {
+            document.getElementById('sync-notify-status').innerHTML += 'ERROR';
+          }
+          resolve();
+        }
+      }
+    });
   });
 }
 
 function syncManage() {
-  return new Promise(function(resolve, reject) {
+  return new Promise(function(resolve) {
     document.getElementById('sync-manage-status').innerHTML += 'testing... ';
-    $fh.sync.manage('test', {}, {}, {}, function() {
-      document.getElementById('sync-manage-status').innerHTML += 'OK';
+    $fh.sync.manage(datasetId);
+    document.getElementById('sync-manage-status').innerHTML += 'OK';
+    resolve();
+  });
+}
+
+function syncDoList() {
+  return new Promise(function(resolve) {
+    document.getElementById('sync-do-list-status').innerHTML += 'testing... ';
+    $fh.sync.doList(datasetId, function(res) {
+      document.getElementById('sync-do-list-status').innerHTML += JSON.stringify(res) + ' OK';
+      resolve();
+    }, function(code, msg) {
+      document.getElementById('sync-do-list-status').innerHTML += code + ' ' + msg + ' ERROR';
       resolve();
     });
   });
 }
 
-function wait10sec() {
-  return new Promise(function(resolve, reject) {
-    setTimeout(function () {
+function syncDoCreate() {
+  return new Promise(function(resolve) {
+    document.getElementById('sync-do-list-status').innerHTML += 'testing... ';
+    $fh.sync.doList(datasetId, function(res) {
+      document.getElementById('sync-do-list-status').innerHTML += JSON.stringify(res) + ' OK';
       resolve();
-    }, 10000);
+    }, function(code, msg) {
+      document.getElementById('sync-do-list-status').innerHTML += code + ' ' + msg + ' ERROR';
+      resolve();
+    });
   });
-}
-
-function notification(event) {
-  document.getElementById('sync-notifications').innerHTML += event.code + ' ';
 }
