@@ -2,16 +2,14 @@
 describe('Get FH Params', function() {
   this.timeout(15000);
 
-  it('should get FH params', function() {
+  it('should get FH params and call cloud', function() {
     return new Promise(function(resolve) {
       var cloudUrl = $fh.getCloudURL();
       var fhParams = $fh.getFHParams();
       var xmlHttp = new XMLHttpRequest();
       xmlHttp.onreadystatechange = function() {
         if (xmlHttp.readyState === 4) {
-          if (xmlHttp.status !== 200) {
-            expect().fail(xmlHttp.status);
-          }
+          expect(xmlHttp.status).to.be(200);
           resolve();
         }
       };
@@ -25,15 +23,13 @@ describe('Get FH Params', function() {
     });
   });
 
-  it('should fail get FH params', function() {
+  it('should fail calling cloud without FH params', function() {
     return new Promise(function(resolve) {
       var cloudUrl = $fh.getCloudURL();
       var xmlHttp = new XMLHttpRequest();
       xmlHttp.onreadystatechange = function() {
         if (xmlHttp.readyState === 4) {
-          if (xmlHttp.status !== 401) {
-            expect().fail(xmlHttp.status);
-          }
+          expect(xmlHttp.status).to.be(401);
           resolve();
         }
       };

@@ -9,28 +9,22 @@ const hashResult = {
 describe('Hash', function() {
 
   it('should hash', function() {
-    var allOk = true;
     testAlgorithm('MD5');
     testAlgorithm('SHA1');
     testAlgorithm('SHA256');
     testAlgorithm('SHA512');
-
-    if (!allOk) {
-      expect().fail();
-    }
-
-    function testAlgorithm(alg) {
-      var options = {
-        algorithm: alg,
-        text: 'Text to hash.'
-      };
-      $fh.hash(options, function(res) {
-        if (res.hashvalue !== hashResult[alg]) {
-          allOk = false;
-        }
-      }, function() {
-        allOk = false;
-      });
-    }
   });
+
 });
+
+function testAlgorithm(alg) {
+  var options = {
+    algorithm: alg,
+    text: 'Text to hash.'
+  };
+  $fh.hash(options, function(res) {
+    expect(res.hashvalue).to.be(hashResult[alg]);
+  }, function() {
+    expect().fail();
+  });
+}

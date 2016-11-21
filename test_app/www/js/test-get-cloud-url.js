@@ -8,9 +8,7 @@ describe('Get Cloud Url', function() {
       var xmlHttp = new XMLHttpRequest();
       xmlHttp.onreadystatechange = function() {
         if (xmlHttp.readyState === 4) {
-          if (xmlHttp.status !== 200) {
-            expect().fail(xmlHttp.status);
-          }
+          expect(xmlHttp.status).to.be(200);
           resolve();
         }
       };

@@ -12,9 +12,7 @@ describe('Cloud', function() {
           }
         },
         function(res) {
-          if (res.msg !== 'Hello testvalue') {
-            expect().fail('wrong response');
-          }
+          expect(res.msg).to.be('Hello testvalue');
           resolve();
         },
         function(code) {

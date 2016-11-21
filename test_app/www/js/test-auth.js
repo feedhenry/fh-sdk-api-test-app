@@ -63,12 +63,8 @@ describe('Auth', function() {
               expect().fail(err);
               return resolve();
             }
-            if (valid) {
-              resolve();
-            } else {
-              expect().fail('session is not valid');
-              resolve();
-            }
+            expect(valid).to.be.ok();
+            resolve();
           });
         } else {
           expect().fail('user not authenticated');
@@ -91,10 +87,7 @@ describe('Auth', function() {
             expect().fail(err);
             return resolve();
           }
-          if (exist) {
-            expect().fail('session still valid');
-            return resolve();
-          }
+          expect(exist).not.to.be.ok();
           resolve();
         });
       });

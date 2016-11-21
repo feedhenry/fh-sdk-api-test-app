@@ -175,13 +175,10 @@ function checkResults() {
         .getText('body')
         .then((text) => {
           console.log(text);
-          var lines = text.split('\n');
-          success = true;
-          lines.forEach((line) => {
-            if (line.endsWith('ERROR')) {
-              success = false;
-            }
-          });
+        })
+        .getText('.failures em')
+        .then((text) => {
+          success = (text === '0');
         })
         // .then(() => {
         //   return new Promise((resolve) => {
