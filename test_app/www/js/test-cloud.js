@@ -3,7 +3,7 @@ describe('Cloud', function() {
   this.timeout(15000);
 
   it('should call cloud', function() {
-    return new Promise(function(resolve) {
+    return new Promise(function(resolve, reject) {
       $fh.cloud(
         {
           path: 'hello',
@@ -16,22 +16,20 @@ describe('Cloud', function() {
           resolve();
         },
         function(code) {
-          expect().fail(code);
-          resolve();
+          reject(code);
         }
       );
     });
   });
 
   it('should fail cloud call', function() {
-    return new Promise(function(resolve) {
+    return new Promise(function(resolve, reject) {
       $fh.cloud(
         {
           path: 'nonsence'
         },
         function(res) {
-          expect().fail(res);
-          resolve();
+          reject(res);
         },
         function() {
           resolve();

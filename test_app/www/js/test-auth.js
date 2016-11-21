@@ -13,7 +13,7 @@ describe('Auth', function() {
   });
 
   it('should authenticate', function() {
-    return new Promise(function(resolve) {
+    return new Promise(function(resolve, reject) {
       $fh.auth({
         "policyId": testConfig.policyId,
         "clientToken": testConfig.clientToken,
@@ -25,14 +25,13 @@ describe('Auth', function() {
       }, function() {
         resolve();
       }, function(msg) {
-        expect().fail(msg);
-        resolve();
+        reject(msg);
       });
     });
   });
 
   it('should fail authentication', function() {
-    return new Promise(function(resolve) {
+    return new Promise(function(resolve, reject) {
       $fh.auth({
         "policyId": testConfig.policyId,
         "clientToken": testConfig.clientToken,
@@ -42,8 +41,7 @@ describe('Auth', function() {
           "password": "nonsence"
         }
       }, function(res) {
-        expect().fail(res);
-        resolve();
+        reject(res);
       }, function() {
         resolve();
       });
@@ -51,41 +49,36 @@ describe('Auth', function() {
   });
 
   it('should validate', function() {
-    return new Promise(function(resolve) {
+    return new Promise(function(resolve, reject) {
       $fh.auth.hasSession(function(err, exist) {
         if (err) {
-          expect().fail(err);
-          return resolve();
+          reject(err);
         }
         if (exist) {
           $fh.auth.verify(function(err, valid) {
             if (err) {
-              expect().fail(err);
-              return resolve();
+              reject(err);
             }
             expect(valid).to.be.ok();
             resolve();
           });
         } else {
-          expect().fail('user not authenticated');
-          resolve();
+          reject('user not authenticated');
         }
       });
     });
   });
 
   it('should log out', function() {
-    return new Promise(function(resolve) {
+    return new Promise(function(resolve, reject) {
       $fh.auth.clearSession(function(err) {
         if (err) {
-          expect().fail(err);
-          return resolve();
+          reject(err);
         }
 
         $fh.auth.hasSession(function(err, exist) {
           if (err) {
-            expect().fail(err);
-            return resolve();
+            reject(err);
           }
           expect(exist).not.to.be.ok();
           resolve();
