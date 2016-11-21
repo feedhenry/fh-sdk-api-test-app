@@ -32,32 +32,27 @@
         <meta name="format-detection" content="telephone=no">
         <meta name="msapplication-tap-highlight" content="no">
         <meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width">
-        <link rel="stylesheet" type="text/css" href="css/index.css">
+        <link href="https://cdn.rawgit.com/mochajs/mocha/2.2.5/mocha.css" rel="stylesheet" />
         <title>Hello World</title>
         <script src="feedhenry.js" type="text/javascript"></script>
         <script src="https://code.jquery.com/jquery-3.1.1.min.js" integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8=" crossorigin="anonymous"></script>
     </head>
     <body>
-        <div id="auth-status">Auth - </div>
-        <div id="auth-fail-status">AuthFail - </div>
-        <div id="auth-valid-status">AuthValid - </div>
-        <div id="auth-log-out-status">AuthLogOut - </div>
-        <div id="cloud-status">Cloud - </div>
-        <div id="cloud-fail-status">CloudFail - </div>
-        <div id="get-cloud-url-status">GetCloudUrl - </div>
-        <div id="get-fh-params-status">GetFHParams - </div>
-        <div id="get-fh-params-fail-status">GetFHParamsFail - </div>
-        <div id="hash-status">Hash - </div>
-        <div id="sec-status">Sec - </div>
-        <div id="sync-init-status">SyncInit - </div>
-        <div id="sync-manage-status">SyncManage - </div>
-        <div id="sync-notify-status">SyncNotify - </div>
-        <div id="sync-do-list-status">SyncDoList - </div>
-        <div id="test-finished"></div>
-        <div id="debug"></div>
+        <div id="mocha"><div id="test-finished"></div></div>
+        
 
         <script type="text/javascript" src="cordova.js"></script>
-        <script type="text/javascript" src="js/index.js"></script>
-        <script type="text/javascript" src="js/test-bundle.js"></script>
+
+        <script src="https://cdn.rawgit.com/Automattic/expect.js/0.3.1/index.js" crossorigin="anonymous"></script>
+        <script src="https://cdn.rawgit.com/mochajs/mocha/2.2.5/mocha.js" crossorigin="anonymous"></script>
+
+        <script src="js/mocha-setup.js"></script>
+        <script src="js/test-auth.js"></script>
+        <script src="js/test-cloud.js"></script>
+        <script src="js/test-get-cloud-url.js"></script>
+        <script src="js/test-get-fh-params.js"></script>
+        <script src="js/test-hash.js"></script>
+        <script src="js/test-sec.js"></script>
+        <script src="js/mocha-run.js"></script>
     </body>
 </html>

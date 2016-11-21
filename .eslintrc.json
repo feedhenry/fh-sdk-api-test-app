@@ -3,7 +3,12 @@
     "browser": true,
     "node": true,
     "jquery": true,
-    "es6": true
+    "es6": true,
+    "mocha": true
+  },
+  "globals": {
+    "expect": true,
+    "$fh": true
   },
   "extends": "eslint:recommended",
   "rules": {

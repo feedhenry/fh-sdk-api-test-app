@@ -1,28 +1,17 @@
-module.exports = {
-  test: test
-};
 
-function test() {
-  return sec();
-}
+describe('Sec', function() {
 
-function sec() {
-  return new Promise(function(resolve, reject) {
-    document.getElementById('sec-status').innerHTML += 'testing... ';
+  it('should crypt', function() {
     var allOk = true;
 
     testKeySize('128');
     testKeySize('256');
 
-    if (allOk) {
-      document.getElementById('sec-status').innerHTML += 'OK';
-    } else {
-      document.getElementById('sec-status').innerHTML += 'ERROR';
+    if (!allOk) {
+      expect().fail();
     }
-    resolve();
 
     function testKeySize(keySize) {
-      var algorithm;
       var secretkey;
       var iv;
       var ciphertext;
@@ -35,12 +24,10 @@ function sec() {
         }
       };
       $fh.sec(options, function(res) {
-        algorithm = res.algorithm;
         secretkey = res.secretkey;
         iv = res.iv;
-      }, function(code) {
+      }, function() {
         allOk = false;
-        document.getElementById('sec-status').innerHTML += code + '-error ';
       });
       if (!allOk) {
         return;
@@ -57,9 +44,8 @@ function sec() {
       };
       $fh.sec(options, function(res) {
         ciphertext = res.ciphertext;
-      }, function(code) {
+      }, function() {
         allOk = false;
-        document.getElementById('sec-status').innerHTML += code + '-error ';
       });
       if (!allOk) {
         return;
@@ -75,16 +61,12 @@ function sec() {
         }
       };
       $fh.sec(options, function(res) {
-        if (res.plaintext === 'Need a new page to start on') {
-          document.getElementById('sec-status').innerHTML += keySize + '-ok ';
-        } else {
+        if (res.plaintext !== 'Need a new page to start on') {
           allOk = false;
-          document.getElementById('sec-status').innerHTML += keySize + '-error ';
         }
-      }, function(code) {
+      }, function() {
         allOk = false;
-        document.getElementById('sec-status').innerHTML += code + '-error ';
       });
     }
   });
-}
+});

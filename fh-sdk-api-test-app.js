@@ -183,6 +183,13 @@ function checkResults() {
             }
           });
         })
+        // .then(() => {
+        //   return new Promise((resolve) => {
+        //     setTimeout(function() {
+        //       resolve();
+        //     }, 10000);
+        //   });
+        // })
         .end()
         .call(() => {
           resolve(success);
