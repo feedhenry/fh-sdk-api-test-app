@@ -1,5 +1,8 @@
 
 const datasetId = 'test';
+const testData = { test: 'text' };
+const updateData = { test: 'something else' };
+var dataId;
 
 describe('Sync', function() {
   this.timeout(15000);
@@ -38,8 +41,71 @@ describe('Sync', function() {
   it('should list', function() {
     return new Promise(function(resolve, reject) {
       $fh.sync.doList(datasetId, function(res) {
-        console.log(res);
+        expect(res).to.eql({});
         resolve();
+      }, function(code, msg) {
+        reject(code + ': ' + msg);
+      });
+    });
+  });
+
+  it('should create', function() {
+    return new Promise(function(resolve, reject) {
+      $fh.sync.doCreate(datasetId, testData, function(res) {
+        dataId = res.uid;
+        resolve();
+      }, function(code, msg) {
+        reject(code + ': ' + msg);
+      });
+    });
+  });
+
+  it('should read', function() {
+    return new Promise(function(resolve, reject) {
+      $fh.sync.doRead(datasetId, dataId, function(data) {
+        expect(data.data).to.eql(testData);
+        resolve();
+      }, function(code, msg) {
+        reject(code + ': ' + msg);
+      });
+    });
+  });
+
+  it('should fail reading unknown uid', function() {
+    return new Promise(function(resolve, reject) {
+      $fh.sync.doRead(datasetId, 'nonsence', function(data) {
+        reject(data);
+      }, function(code) {
+        expect(code).to.be('unknown_uid');
+        resolve();
+      });
+    });
+  });
+
+  it('should update', function() {
+    return new Promise(function(resolve, reject) {
+      $fh.sync.doUpdate(datasetId, dataId, updateData, function() {
+        $fh.sync.doRead(datasetId, dataId, function(data) {
+          expect(data.data).to.eql(updateData);
+          resolve();
+        }, function(code, msg) {
+          reject(code + ': ' + msg);
+        });
+      }, function(code, msg) {
+        reject(code + ': ' + msg);
+      });
+    });
+  });
+
+  it('should delete', function() {
+    return new Promise(function(resolve, reject) {
+      $fh.sync.doDelete(datasetId, dataId, function() {
+        $fh.sync.doList(datasetId, function(res) {
+          expect(res).to.eql({});
+          resolve();
+        }, function(code, msg) {
+          reject(code + ': ' + msg);
+        });
       }, function(code, msg) {
         reject(code + ': ' + msg);
       });
