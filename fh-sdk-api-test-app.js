@@ -38,7 +38,7 @@ program
   .option('-u, --username <username>', 'Username - required')
   .option('-p, --password <password>', 'Password - required')
   .option('-e, --environment <environment>', 'Environment to be used for app deployment - required')
-  .option('-f, --exit-fail', 'When test fails exit with code 1')
+  // .option('-f, --exit-fail', 'When test fails exit with code 1')
   .parse(process.argv);
 
 if (!program.host || !program.username || !program.password || !program.environment) {
@@ -59,9 +59,9 @@ prepareEnvironment()
       console.log('TEST SUCCESS');
     } else {
       console.log('TEST FAILURE');
-      if (program['exit-fail']) {
-        process.exit(1);
-      }
+      // if (program['exit-fail']) {
+      //   process.exit(1);
+      // }
     }
   })
   .catch((err) => {
@@ -172,7 +172,7 @@ function checkResults() {
         .url(cordovaUrl)
         .waitForVisible('#test-finished', 20000)
         .waitForText('#test-finished')
-        .getText('body')
+        .getText('#mocha')
         .then((text) => {
           console.log(text);
         })
@@ -180,6 +180,8 @@ function checkResults() {
         .then((text) => {
           success = (text === '0');
         })
+        .getText('#report')
+        .then(saveReport)
         // .then(() => {
         //   return new Promise((resolve) => {
         //     setTimeout(function() {
@@ -193,6 +195,18 @@ function checkResults() {
         });
     });
   }
+}
+
+function saveReport(text) {
+  return new Promise((resolve, reject) => {
+    fs.writeFile(__dirname + '/report.xml', text, (err) => {
+      if (err) {
+        return reject(err);
+      }
+
+      resolve();
+    });
+  });
 }
 
 function setFhconfig() {

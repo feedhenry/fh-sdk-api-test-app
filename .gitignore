@@ -4,3 +4,4 @@ test_app/www/testconfig.json
 npm-debug.log
 selenium.log
 cordova.log
+report.xml
