@@ -5,6 +5,7 @@
   "main": "fh-sdk-api-test-app.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
+    "eslint": "eslint *.js lib/*.js test_app/www/js/*.js",
     "add-platform": "cd test_app && cordova platform add browser &>../cordova.log",
     "rm-platform": "cd test_app && cordova platform rm browser",
     "selenium": "java -Dwebdriver.chrome.driver=node_modules/chromedriver/lib/chromedriver/chromedriver -jar node_modules/selenium-server/lib/runner/selenium-server-standalone-3.0.1.jar &>selenium.log &",
