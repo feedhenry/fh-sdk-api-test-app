@@ -17,6 +17,7 @@ const fhcSecureEndpoints = require('./lib/fhc-secure-endpoints');
 const fhcAppImport = require('./lib/fhc-app-import');
 const fhcConnectionUpdate = require('./lib/fhc-connection-update');
 const fhcListConnections = require('./lib/fhc-connections-list');
+const fhcDeployApp = require('./lib/fhc-app-deploy');
 
 const testAppFolder = __dirname + '/test_app/';
 const cordovaUrl = 'http://localhost:8000/browser/www/index.html';
@@ -38,7 +39,6 @@ program
   .option('-u, --username <username>', 'Username - required')
   .option('-p, --password <password>', 'Password - required')
   .option('-e, --environment <environment>', 'Environment to be used for app deployment - required')
-  // .option('-f, --exit-fail', 'When test fails exit with code 1')
   .parse(process.argv);
 
 if (!program.host || !program.username || !program.password || !program.environment) {
@@ -59,9 +59,6 @@ prepareEnvironment()
       console.log('TEST SUCCESS');
     } else {
       console.log('TEST FAILURE');
-      // if (program['exit-fail']) {
-      //   process.exit(1);
-      // }
     }
   })
   .catch((err) => {
@@ -74,9 +71,17 @@ function prepareEnvironment() {
     .then(importTestCloudApp)
     .then(prepareConnection)
     .then(secureEndpoints)
+    .then(deployCloudApp)
     .then(preparePolicy)
     .then(setFhconfig)
     .then(setTestConfig);
+}
+
+function deployCloudApp() {
+  return fhcDeployApp({
+    appGuid: cloudApp.guid,
+    env: program.environment
+  });
 }
 
 function prepareConnection() {
@@ -182,13 +187,6 @@ function checkResults() {
         })
         .getText('#report')
         .then(saveReport)
-        // .then(() => {
-        //   return new Promise((resolve) => {
-        //     setTimeout(function() {
-        //       resolve();
-        //     }, 10000);
-        //   });
-        // })
         .end()
         .call(() => {
           resolve(success);
