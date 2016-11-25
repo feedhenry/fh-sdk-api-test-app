@@ -6,6 +6,8 @@ const execFile = require('child_process').execFile;
 const request = require('request');
 const webdriverio = require('webdriverio');
 const program = require('commander');
+const unzipper = require('unzipper');
+const GitHubApi = require("github");
 const pkg = require('./package.json');
 
 const fhcInit = require('./lib/fhc-init');
@@ -39,6 +41,7 @@ program
   .option('-u, --username <username>', 'Username - required')
   .option('-p, --password <password>', 'Password - required')
   .option('-e, --environment <environment>', 'Environment to be used for app deployment - required')
+  .option('-s, --sdkversion <tag>', 'SDK version (e.g. 2.17.5 or latest) - required')
   .parse(process.argv);
 
 if (!program.host || !program.username || !program.password || !program.environment) {
@@ -67,6 +70,7 @@ prepareEnvironment()
 
 function prepareEnvironment() {
   return fhcInit(program)
+    .then(importSdk)
     .then(prepareProject)
     .then(importTestCloudApp)
     .then(prepareConnection)
@@ -75,6 +79,54 @@ function prepareEnvironment() {
     .then(preparePolicy)
     .then(setFhconfig)
     .then(setTestConfig);
+}
+
+function importSdk() {
+  var github = new GitHubApi({
+    protocol: 'https',
+    host: 'api.github.com',
+    headers: {
+      'User-Agent': "fh-sdk-api-test-app"
+    },
+    followRedirects: false,
+    timeout: 5000
+  });
+
+  return new Promise((resolve, reject) => {
+    if (program.sdkversion === 'latest') {
+      github.repos.getLatestRelease({ owner: 'feedhenry', repo: 'fh-js-sdk' }, downloadRelease);
+    } else {
+      github.repos.getReleaseByTag({ owner: 'feedhenry', repo: 'fh-js-sdk', tag: program.sdkversion }, downloadRelease);
+    }
+
+    function downloadRelease(err, res) {
+      if (err) {
+        return reject(err);
+      }
+      if (!res) {
+        return reject('can not get release');
+      }
+
+      request({
+        url: res.assets[0].url,
+        headers: {
+          Accept: 'application/octet-stream',
+          'User-Agent': 'fh-sdk-api-test-app'
+        }
+      })
+      .pipe(unzipper.Parse())
+      .on('entry', (entry) => {
+        if (entry.path.endsWith('feedhenry.js')) {
+          entry.pipe(fs.createWriteStream(testAppFolder + 'www/feedhenry.js'));
+        } else {
+          entry.autodrain();
+        }
+      })
+      .on('finish', () => {
+        resolve();
+      });
+    }
+  });
 }
 
 function deployCloudApp() {
