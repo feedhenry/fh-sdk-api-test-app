@@ -93,7 +93,9 @@ function importSdk() {
   });
 
   return new Promise((resolve, reject) => {
-    if (program.sdkversion === 'latest') {
+    if (program.sdkversion === 'local') {
+      return resolve();
+    } else if (program.sdkversion === 'latest') {
       github.repos.getLatestRelease({ owner: 'feedhenry', repo: 'fh-js-sdk' }, downloadRelease);
     } else {
       github.repos.getReleaseByTag({ owner: 'feedhenry', repo: 'fh-js-sdk', tag: program.sdkversion }, downloadRelease);
