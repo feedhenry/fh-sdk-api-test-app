@@ -69,6 +69,7 @@ prepareEnvironment()
   });
 
 function prepareEnvironment() {
+  console.log('Preparing environment');
   return fhcInit(program)
     .then(importSdk)
     .then(prepareProject)
@@ -82,6 +83,7 @@ function prepareEnvironment() {
 }
 
 function importSdk() {
+  console.log('Importing sdk');
   var github = new GitHubApi({
     protocol: 'https',
     host: 'api.github.com',
@@ -132,6 +134,7 @@ function importSdk() {
 }
 
 function deployCloudApp() {
+  console.log('Deploying CloudApp');
   return fhcDeployApp({
     appGuid: cloudApp.guid,
     env: program.environment
@@ -139,6 +142,7 @@ function deployCloudApp() {
 }
 
 function prepareConnection() {
+  console.log('Preparing Connection');
   return fhcListConnections({ projectId: project.guid })
     .then(connections => {
       return connections[0];
@@ -156,6 +160,7 @@ function updateConnection(conn) {
 }
 
 function secureEndpoints() {
+  console.log('Securing endpoints');
   return fhcSecureEndpoints({
     appGuid: cloudApp.guid,
     security: 'appapikey',
@@ -164,6 +169,7 @@ function secureEndpoints() {
 }
 
 function importTestCloudApp() {
+  console.log('Importing Test CloudApp');
   return fhcAppImport({
     projectId: project.guid,
     title: cloudAppName,
@@ -174,6 +180,7 @@ function importTestCloudApp() {
 }
 
 function prepareProject() {
+  console.log('Preparing project');
   return fhcCreateProject({
     name: projectName,
     template: 'hello_world_project'
@@ -181,6 +188,7 @@ function prepareProject() {
 }
 
 function preparePolicy() {
+  console.log('Preparing Policy');
   return fhcCreatePolicy({
     checkUserApproved: false,
     checkUserExists: true,
@@ -193,12 +201,14 @@ function preparePolicy() {
 }
 
 function cleanEnvironment() {
+  console.log('Cleaning environment');
   return fhcDeleteProject({ guid: project.guid })
     .then(forwardPolicyGuid)
     .then(fhcDeletePolicy);
 }
 
 function runCordova() {
+  console.log('Running cordova');
   return new Promise(function(resolve) {
     cordova = execFile('cordova', ['serve'], { cwd: testAppFolder });
     resolve();
@@ -206,6 +216,7 @@ function runCordova() {
 }
 
 function stopCordova() {
+  console.log('Stopping cordova');
   if (cordova) {
     cordova.kill('SIGINT');
   }
@@ -262,6 +273,7 @@ function saveReport(text) {
 }
 
 function setFhconfig() {
+  console.log('Setting fhconfig');
   var app = _.find(project.apps, (app) => {
     return app.type === 'client_advanced_hybrid';
   });
@@ -285,6 +297,7 @@ function setFhconfig() {
 }
 
 function setTestConfig() {
+  console.log('Setting TestConfig');
   var testConf = {
     username: program.username,
     password: program.password,

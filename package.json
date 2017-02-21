@@ -22,7 +22,7 @@
   "dependencies": {
     "chromedriver": "^2.25.1",
     "commander": "^2.9.0",
-    "fh-fhc": "git://github.com/feedhenry/fh-fhc.git#033b6f290ad66ef2e48385d277a0df6a1ac651ad",
+    "fh-fhc": "http://npm.skunkhenry.com/fh-fhc/-/fh-fhc-2.17.3-577.tgz",
     "github": "^6.1.0",
     "request": "^2.75.0",
     "selenium-server": "^3.0.1",
