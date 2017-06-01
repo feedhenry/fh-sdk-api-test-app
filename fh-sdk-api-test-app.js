@@ -1,47 +1,41 @@
-#!/usr/bin/env node
-
-const _ = require('underscore');
 const fs = require('fs');
-const execFile = require('child_process').execFile;
+const childProcess = require('child_process');
 const request = require('request');
-const webdriverio = require('webdriverio');
 const program = require('commander');
-const unzipper = require('unzipper');
-const GitHubApi = require("github");
+const Nightmare = require('nightmare');
+const fhc = require('fhc-promise');
+const path = require('path');
+const fse = require('fs-extra');
+const { promisify } = require('util');
+
 const pkg = require('./package.json');
+const git = require('./utils/git');
+const async = require('./utils/async');
 
-const fhcInit = require('./lib/fhc-init');
-const fhcCreateProject = require('./lib/fhc-create-project');
-const fhcDeleteProject = require('./lib/fhc-delete-project');
-const fhcCreatePolicy = require('./lib/fhc-create-policy');
-const fhcDeletePolicy = require('./lib/fhc-delete-policy');
-const fhcSecureEndpoints = require('./lib/fhc-secure-endpoints');
-const fhcAppImport = require('./lib/fhc-app-import');
-const fhcConnectionUpdate = require('./lib/fhc-connection-update');
-const fhcListConnections = require('./lib/fhc-connections-list');
-const fhcDeployApp = require('./lib/fhc-app-deploy');
+const nightmare = Nightmare({ show: false });
+const execFile = promisify(childProcess.execFile);
+const execFileAsync = childProcess.execFile;
+const requestPromise = promisify(request);
 
-const testAppFolder = __dirname + '/test_app/';
+let fh;
+let project;
+let cloudApp;
+let clientApp;
+let cordova;
+let failures;
+let policy;
+
+const testAppFolder = path.resolve(__dirname, 'test_app');
 const cordovaUrl = 'http://localhost:8000/browser/www/index.html';
-
-const projectName = 'api-test-project';
-const policyName = 'api-test-policy';
-const cloudAppName = 'api-test-cloud-app';
-
-var project;
-var cloudApp;
-var policy;
-var cordova;
-var success;
 
 program
   .version(pkg.version)
   .description(pkg.description)
-  .option('-h, --host <address>', 'Host - required')
+  .option('-t, --host <address>', 'Host - required')
   .option('-u, --username <username>', 'Username - required')
   .option('-p, --password <password>', 'Password - required')
   .option('-e, --environment <environment>', 'Environment to be used for app deployment - required')
-  .option('-s, --sdkversion <tag>', 'SDK version (e.g. 2.17.5 or latest) - required')
+  .option('-f, --prefix <prefix>', 'Prefix for project')
   .parse(process.argv);
 
 if (!program.host || !program.username || !program.password || !program.environment) {
@@ -49,295 +43,147 @@ if (!program.host || !program.username || !program.password || !program.environm
   process.exit();
 }
 
-prepareEnvironment()
-  .then(runCordova)
-  .then(checkResults)
-  .catch((err) => {
-    console.error(err);
-  })
-  .then(stopCordova)
-  .then(cleanEnvironment)
-  .then(() => {
-    if (success) {
-      console.log('TEST SUCCESS');
-    } else {
-      console.log('TEST FAILURE');
-    }
-  })
-  .catch((err) => {
-    console.error(err);
-  });
+const prefix = program.prefix || 'sdk-test-';
 
-function prepareEnvironment() {
-  console.log('Preparing environment');
-  return fhcInit(program)
-    .then(importSdk)
-    .then(prepareProject)
-    .then(importTestCloudApp)
-    .then(prepareConnection)
-    .then(secureEndpoints)
-    .then(deployCloudApp)
-    .then(preparePolicy)
-    .then(setFhconfig)
-    .then(setTestConfig);
+run();
+
+async function run() {
+  try {
+    fh = await fhc.init(program);
+    await cleanup();
+    await createProject();
+    await fh.secureEndpoints({ appGuid: cloudApp.guid, security: 'appapikey', env: program.environment });
+    await deployCloudApp();
+    await updateConnection();
+    await git.clone(clientApp.internallyHostedRepoUrl, program.username, program.password, testAppFolder, 'master');
+    copyTestsToApp();
+    await createPolicy();
+    createTestConfig();
+    await execFile('cordova', ['platform', 'add', 'browser'], { cwd: testAppFolder });
+    cordova = execFileAsync('cordova', ['serve'], { cwd: testAppFolder });
+    await checkResults();
+    if (cordova) {
+      cordova.kill('SIGINT');
+    }
+    console.log('Number of failures:', failures);
+    await cleanup();
+  } catch (error) {
+    console.error(error);
+  }
 }
 
-function importSdk() {
-  console.log('Importing sdk');
-  var github = new GitHubApi({
-    protocol: 'https',
-    host: 'api.github.com',
-    headers: {
-      'User-Agent': "fh-sdk-api-test-app"
-    },
-    followRedirects: false,
-    timeout: 5000
+async function cleanup() {
+  fse.removeSync(testAppFolder);
+
+  const projects = await fh.projects.list();
+  const projectsToDelete = projects.filter(project =>
+    project.title.startsWith(prefix)
+  );
+  await async.sequence(projectsToDelete, proj => {
+    console.log(`Deleting ${proj.title}`);
+    return fh.projects.delete(proj.guid).catch(console.error);
   });
 
-  return new Promise((resolve, reject) => {
-    if (program.sdkversion === 'local') {
-      return resolve();
-    } else if (program.sdkversion === 'latest') {
-      github.repos.getLatestRelease({ owner: 'feedhenry', repo: 'fh-js-sdk' }, downloadRelease);
-    } else {
-      github.repos.getReleaseByTag({ owner: 'feedhenry', repo: 'fh-js-sdk', tag: program.sdkversion }, downloadRelease);
-    }
+  const policies = await fh.admin.policies.list();
+  const policiesToDelete = policies.list.filter(policy =>
+    policy.policyId.startsWith(prefix)
+  );
+  await async.sequence(policiesToDelete, policy => {
+    console.log(`Deleting ${policy.policyId}`);
+    return fh.admin.policies.delete(policy.guid).catch(console.error);
+  });
+}
 
-    function downloadRelease(err, res) {
-      if (err) {
-        return reject(err);
-      }
-      if (!res) {
-        return reject('can not get release');
-      }
+async function createProject() {
+  project = await fh.projects.create({
+    projectName: prefix + Date.now(),
+    template: 'hello_world_project'
+  });
+  cloudApp = project.apps.find(app => app.type === 'cloud_nodejs');
+  clientApp = project.apps.find(app => app.type === 'client_advanced_hybrid');
+}
 
-      request({
-        url: res.assets[0].url,
-        headers: {
-          Accept: 'application/octet-stream',
-          'User-Agent': 'fh-sdk-api-test-app'
-        }
-      })
-      .pipe(unzipper.Parse())
-      .on('entry', (entry) => {
-        if (entry.path.endsWith('feedhenry.js')) {
-          entry.pipe(fs.createWriteStream(testAppFolder + 'www/feedhenry.js'));
-        } else {
-          entry.autodrain();
-        }
-      })
-      .on('finish', () => {
-        resolve();
-      });
+async function deployCloudApp() {
+  await fh.app.stage({
+    app: cloudApp.guid,
+    env: program.environment,
+    runtime: 'node4',
+    gitRef: {
+      type: 'branch',
+      value: 'master'
     }
   });
 }
 
-function deployCloudApp() {
-  console.log('Deploying CloudApp');
-  return fhcDeployApp({
-    appGuid: cloudApp.guid,
-    env: program.environment
-  });
-}
-
-function prepareConnection() {
-  console.log('Preparing Connection');
-  return fhcListConnections({ projectId: project.guid })
-    .then(connections => {
-      return connections[0];
-    })
-    .then(updateConnection);
-}
-
-function updateConnection(conn) {
-  return fhcConnectionUpdate({
+async function updateConnection() {
+  const connections = await fh.connections.list({ projectId: project.guid });
+  await fh.connections.update({
     projectId: project.guid,
-    connectionId: conn.guid,
+    connectionId: connections[0].guid,
     cloudAppId: cloudApp.guid,
     env: program.environment
   });
 }
 
-function secureEndpoints() {
-  console.log('Securing endpoints');
-  return fhcSecureEndpoints({
-    appGuid: cloudApp.guid,
-    security: 'appapikey',
-    env: program.environment
-  });
-}
-
-function importTestCloudApp() {
-  console.log('Importing Test CloudApp');
-  return fhcAppImport({
-    projectId: project.guid,
-    title: cloudAppName,
-    type: 'cloud_nodejs',
-    source: './fixtures/cloud-app.zip',
-    env: program.environment
-  }).then(saveCloudApp);
-}
-
-function prepareProject() {
-  console.log('Preparing project');
-  return fhcCreateProject({
-    name: projectName,
-    template: 'hello_world_project'
-  }).then(saveProject);
-}
-
-function preparePolicy() {
-  console.log('Preparing Policy');
-  return fhcCreatePolicy({
-    checkUserApproved: false,
-    checkUserExists: true,
-    configurations: {
-      provider: "FEEDHENRY"
+async function createPolicy() {
+  policy = await fh.admin.policies.create({
+    policyId: prefix + Date.now(),
+    policyType: 'FEEDHENRY',
+    config: {
+      provider: 'FEEDHENRY'
     },
-    policyId: policyName,
-    policyType: "FEEDHENRY"
-  }).then(savePolicy);
-}
-
-function cleanEnvironment() {
-  console.log('Cleaning environment');
-  return fhcDeleteProject({ guid: project.guid })
-    .then(forwardPolicyGuid)
-    .then(fhcDeletePolicy);
-}
-
-function runCordova() {
-  console.log('Running cordova');
-  return new Promise(function(resolve) {
-    cordova = execFile('cordova', ['serve'], { cwd: testAppFolder });
-    resolve();
+    checkUserExists: true,
+    checkUserApproved: false
   });
 }
 
-function stopCordova() {
-  console.log('Stopping cordova');
-  if (cordova) {
-    cordova.kill('SIGINT');
-  }
+function createTestConfig() {
+  const testConf = {
+    username: program.username,
+    password: program.password,
+    policyId: policy.policyId,
+    clientToken: cloudApp.guid
+  };
+  fs.writeFileSync(path.resolve(testAppFolder, 'www/testconfig.json'), JSON.stringify(testConf, null, 2));
+}
+
+function copyTestToApp(testFile) {
+  fse.copySync(path.resolve(__dirname, 'tests', testFile), path.resolve(__dirname, 'test_app/www/js', testFile));
+}
+
+function copyTestsToApp() {
+  const testFiles = fs.readdirSync(path.resolve(__dirname, 'tests'));
+  testFiles.forEach(testFile => copyTestToApp(testFile));
+  fse.copySync(path.resolve(__dirname, 'utils/mocha-run.js'), path.resolve(__dirname, 'test_app/www/js/mocha-run.js'));
+  fse.copySync(path.resolve(__dirname, 'utils/mocha-setup.js'), path.resolve(__dirname, 'test_app/www/js/mocha-setup.js'));
+  fs.unlinkSync(path.resolve(__dirname, 'test_app/www/index.html'));
+  fse.copySync(path.resolve(__dirname, 'fixtures/index.html'), path.resolve(__dirname, 'test_app/www/index.html'));
 }
 
 function checkResults() {
-  return httpRequest(cordovaUrl)
+  return new Promise(resolve => setTimeout(resolve, 1000))
+    .then(() => requestPromise(cordovaUrl))
     .then(getResults)
-    .catch(() => {
-      return checkResults();
-    });
+    .catch(checkResults);
 
   function getResults() {
-    var options = {
-      desiredCapabilities: {
-        browserName: 'chrome'
-      }
-    };
-    return new Promise(function(resolve) {
-      webdriverio
-        .remote(options)
-        .init()
-        .url(cordovaUrl)
-        .waitForVisible('#test-finished', 20000)
-        .waitForText('#test-finished')
-        .getText('#mocha')
-        .then((text) => {
-          console.log(text);
-        })
-        .getText('.failures em')
-        .then((text) => {
-          success = (text === '0');
-        })
-        .getText('#report')
-        .then(saveReport)
-        .end()
-        .call(() => {
-          resolve(success);
-        });
-    });
+    return nightmare
+      .goto(cordovaUrl)
+      .wait('#test-finished .true')
+      .wait('#mocha')
+      .evaluate(getText, '#mocha')
+      .then(text => {
+        console.log(text);
+      })
+      .then(() => nightmare.evaluate(getText, '.failures em'))
+      .then(text => {
+        failures = parseInt(text);
+      })
+      .then(() => nightmare.evaluate(getText, '#report').end())
+      .then(report => fs.writeFileSync(path.resolve(__dirname, 'report.xml'), report));
   }
 }
 
-function saveReport(text) {
-  return new Promise((resolve, reject) => {
-    fs.writeFile(__dirname + '/report.xml', text, (err) => {
-      if (err) {
-        return reject(err);
-      }
-
-      resolve();
-    });
-  });
-}
-
-function setFhconfig() {
-  console.log('Setting fhconfig');
-  var app = _.find(project.apps, (app) => {
-    return app.type === 'client_advanced_hybrid';
-  });
-  var fhConf = {
-    appid: app.guid,
-    appkey: app.apiKey,
-    apptitle: app.title,
-    connectiontag: '0.0.1',
-    host: program.host,
-    projectid: project.guid,
-  };
-  return new Promise(function(resolve, reject) {
-    fs.writeFile(testAppFolder + 'www/fhconfig.json', JSON.stringify(fhConf, null, 2), (err) => {
-      if (err) {
-        return reject(err);
-      }
-
-      resolve();
-    });
-  });
-}
-
-function setTestConfig() {
-  console.log('Setting TestConfig');
-  var testConf = {
-    username: program.username,
-    password: program.password,
-    policyId: policyName,
-    clientToken: cloudApp.guid
-  };
-  return new Promise(function(resolve, reject) {
-    fs.writeFile(testAppFolder + 'www/testconfig.json', JSON.stringify(testConf, null, 2), (err) => {
-      if (err) {
-        return reject(err);
-      }
-
-      resolve();
-    });
-  });
-}
-
-function forwardPolicyGuid() {
-  return Promise.resolve({ guid: policy.guid });
-}
-
-function saveProject(projectDetails) {
-  project = projectDetails;
-}
-
-function saveCloudApp(appDetails) {
-  cloudApp = appDetails;
-}
-
-function savePolicy(policyDetails) {
-  policy = policyDetails;
-}
-
-function httpRequest(url) {
-  return new Promise(function(resolve, reject) {
-    request(url, function(error, response, body) {
-      if (error) {
-        return reject(error);
-      }
-      resolve(body);
-    });
-  });
+function getText(selector) {
+  return document.querySelector(selector).innerText;
 }
