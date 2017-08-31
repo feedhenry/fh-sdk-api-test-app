@@ -44,5 +44,5 @@ runner.on('end', function() {
   var xmlText = new XMLSerializer().serializeToString(report);
   var xmlTextNode = document.createTextNode(xmlText);
   document.getElementById('report').appendChild(xmlTextNode);
-  document.getElementById('test-finished').innerHTML += 'FINISHED';
+  document.getElementById('test-finished').innerHTML += '<div class="true">FINISHED</div>';
 });

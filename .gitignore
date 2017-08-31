@@ -6,3 +6,4 @@ npm-debug.log
 selenium.log
 cordova.log
 report.xml
+.DS_Store
