@@ -49,18 +49,31 @@ run();
 
 async function run() {
   try {
+    console.log('Initialising fhc');
     fh = await fhc.init(program);
+    console.log('Cleanup');
     await cleanup();
+    console.log('Creating project');
     await createProject();
+    console.log('Securing endpoints');
     await fh.secureEndpoints({ appGuid: cloudApp.guid, security: 'appapikey', env: program.environment });
+    console.log('Deploying cloud app');
     await deployCloudApp();
+    console.log('Updating connection');
     await updateConnection();
+    console.log('Cloning client app');
     await git.clone(clientApp.internallyHostedRepoUrl, program.username, program.password, testAppFolder, 'master');
+    console.log('Copying tests to client app');
     copyTestsToApp();
+    console.log('Creating policy');
     await createPolicy();
+    console.log('Creating test config');
     createTestConfig();
+    console.log('Adding cordova platform');
     await execFile('cordova', ['platform', 'add', 'browser'], { cwd: testAppFolder });
+    console.log('Starting cordova');
     cordova = execFileAsync('cordova', ['serve'], { cwd: testAppFolder });
+    console.log('Starting tests');
     await checkResults();
     if (cordova) {
       cordova.kill('SIGINT');
@@ -161,12 +174,14 @@ function copyTestsToApp() {
 }
 
 function checkResults() {
-  return new Promise(resolve => setTimeout(resolve, 1000))
+  console.log('Waiting for tests to start');
+  return new Promise(resolve => setTimeout(resolve, 2000))
     .then(() => requestPromise(cordovaUrl))
     .then(getResults)
     .catch(checkResults);
 
   function getResults() {
+    console.log('Waiting for tests to finish');
     return nightmare
       .goto(cordovaUrl)
       .wait('#test-finished .true')
