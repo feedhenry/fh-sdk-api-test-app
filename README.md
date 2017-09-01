@@ -22,13 +22,16 @@ Tests [Client API](https://access.redhat.com/documentation/en-us/red_hat_mobile_
 * $FH.SEC
 * $FH.SYNC
 
+## Prerequisites
+* Node.js >= 8
+* Cordova
+
 ## How to use it
 To start the test run:
 ```
 npm install
 npm start -- --host=<address> --username=<user> --password=<password> --environment=<env> --prefix=<prefix>
 ```
-
 
 ## TODO
 * $FH.PUSH
