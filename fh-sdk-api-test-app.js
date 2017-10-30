@@ -36,6 +36,7 @@ program
   .option('-p, --password <password>', 'Password - required')
   .option('-e, --environment <environment>', 'Environment to be used for app deployment - required')
   .option('-f, --prefix <prefix>', 'Prefix for project')
+  .option('-s, --sdk <version>', 'Version of fh-js-sdk to test')
   .parse(process.argv);
 
 if (!program.host || !program.username || !program.password || !program.environment) {
@@ -69,6 +70,12 @@ async function run() {
     await createPolicy();
     console.log('Creating test config');
     createTestConfig();
+    if (program.sdk) {
+      console.log('Change fh-js-sdk version');
+      changeSdkVersion();
+      console.log('Install fh-js-sdk');
+      await execFile('npm', ['install'], { cwd: testAppFolder });
+    }
     console.log('Adding cordova platform');
     await execFile('cordova', ['platform', 'add', 'browser'], { cwd: testAppFolder });
     console.log('Starting cordova');
@@ -83,6 +90,13 @@ async function run() {
   } catch (error) {
     console.error(error);
   }
+}
+
+function changeSdkVersion() {
+  const packageJsonFile = path.resolve(__dirname, 'test_app/package.json');
+  const packageJson = JSON.parse(fs.readFileSync(packageJsonFile, 'utf8'));
+  packageJson.dependencies['fh-js-sdk'] = program.sdk;
+  fs.writeFileSync(packageJsonFile, JSON.stringify(packageJson, null, 2));
 }
 
 async function cleanup() {
