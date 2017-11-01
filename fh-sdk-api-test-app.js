@@ -7,6 +7,7 @@ const fhc = require('fhc-promise');
 const path = require('path');
 const fse = require('fs-extra');
 const { promisify } = require('util');
+const os = require('os');
 
 const pkg = require('./package.json');
 const git = require('./utils/git');
@@ -62,6 +63,8 @@ async function run() {
     await deployCloudApp();
     console.log('Updating connection');
     await updateConnection();
+    console.log('Adding ssh key');
+    await addSshKey();
     console.log('Cloning client app');
     await git.clone(clientApp.internallyHostedRepoUrl, program.username, program.password, testAppFolder, 'master');
     console.log('Copying tests to client app');
@@ -90,6 +93,10 @@ async function run() {
   } catch (error) {
     console.error(error);
   }
+}
+
+async function addSshKey() {
+  await fh.keys.ssh.add({ label: prefix + Date.now(), file: path.resolve(os.homedir(), '.ssh/id_rsa.pub') }).catch(() => {});
 }
 
 function changeSdkVersion() {
