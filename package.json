@@ -5,7 +5,9 @@
   "main": "fh-sdk-api-test-app.js",
   "scripts": {
     "eslint": "eslint *.js tests/*.js utils/*.js",
-    "start": "node fh-sdk-api-test-app.js"
+    "start": "node fh-sdk-api-test-app.js",
+    "snyk-protect": "snyk protect",
+    "prepare": "npm run snyk-protect"
   },
   "author": "Jan Hellar <jhellar@redhat.com>",
   "license": "ISC",
@@ -15,7 +17,8 @@
     "fs-extra": "^4.0.1",
     "nightmare": "^2.10.0",
     "request": "^2.81.0",
-    "simple-git": "^1.76.0"
+    "simple-git": "^1.76.0",
+    "snyk": "^1.42.6"
   },
   "repository": {
     "type": "git",
@@ -23,5 +26,6 @@
   },
   "devDependencies": {
     "eslint": "^3.19.0"
-  }
+  },
+  "snyk": true
 }
